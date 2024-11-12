@@ -11,11 +11,8 @@ informed: Yuke, Atishay, Shaobo, Leonard, Daniel
 
 ## Context and Problem Statement
 
-{Describe the context and problem statement, e.g., in free form using two to three sentences or in the form of an illustrative story. You may want to articulate the problem in form of a question and add links to collaboration boards or issue management systems.}
-
 We are looking to select a JavaScript testing framework to be used in the project. We need a framework that is reliable, well-maintained and integrates with our Github Actions workflow. 
 
-<!-- This is an optional element. Feel free to remove. -->
 ## Decision Drivers
 
 * Quick setup and minimal configurations.
@@ -39,12 +36,12 @@ We are looking to select a JavaScript testing framework to be used in the projec
 Chosen option: "Jest", because it provides an all-in-one solution with built-in assertion library, mocking capabilities, and coverage reporting while being well-documented and easy to set up in CI/CD pipelines.
 
 ### Consequences
+{Blah blah}
 
 ### Confirmation
 
-{Describe how the implementation of/compliance with the ADR can/will be confirmed. Are the design that was decided for and its implementation in line with the decision made? E.g., a design/code review or a test with a library such as ArchUnit can help validate this. Not that although we classify this element as optional, it is included in many ADRs.}
+{Blah blah}
 
-<!-- This is an optional element. Feel free to remove. -->
 ## Pros and Cons of the Options
 
 ### Jest
