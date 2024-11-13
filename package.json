@@ -6,7 +6,8 @@
     "scripts": {
         "test": "jest --coverage",
         "test:watch": "jest --watch",
-        "docs": "jsdoc -c jsdoc.json"
+        "docs": "jsdoc -c jsdoc.json",
+        "start": "npx http-server -o src/index.html"
     },
     "devDependencies": {
         "@biomejs/biome": "1.9.4",
