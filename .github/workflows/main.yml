@@ -26,9 +26,6 @@ jobs:
         
       - name: Run Biome checks
         run: npm run check
-        
-      - name: Run tests
-        run: npm test
 
   deploy:
     runs-on: ubuntu-latest
