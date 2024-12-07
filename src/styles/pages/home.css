@@ -1,0 +1,44 @@
+body {
+	margin: 0;
+	padding: 0;
+}
+
+.greeting-div {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+	background-color: #E7F5E9;
+	color: #0f1b2e;
+	height: 100vh;
+	width: 100%;
+}
+
+h1 {
+	margin: 2px;
+}
+
+button {
+	padding: 10px;
+	border-radius: 5px;
+	margin: 10px;
+	border: 2px solid #0f1b2e;
+	background-color: #E7F5E9;
+	color: #0f1b2e;
+	cursor: pointer;
+}
+
+.tree-art {
+	width: 100vw;
+	height: 30vh;
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	pointer-events: none;
+	margin: 0;
+	padding: 0;
+}
+
+.author {
+	float: right;
+}
