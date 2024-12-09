@@ -1,15 +1,20 @@
+@import "../index.css";
+
 body {
 	margin: 0;
 	padding: 0;
+	font-family: "Noto Sans", sans-serif;
+	font-optical-sizing: auto;
 }
+
 
 .greeting-div {
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	flex-direction: column;
-	background-color: #E7F5E9;
-	color: #0f1b2e;
+	background-color: var(--light-color);
+	color: var(--dark-color);
 	height: 100vh;
 	width: 100%;
 }
@@ -18,14 +23,22 @@ h1 {
 	margin: 2px;
 }
 
-button {
+.info-div{
+	display: flex;
+	flex-direction: row;
+}
+
+.streak-div{
 	padding: 10px;
 	border-radius: 5px;
 	margin: 10px;
-	border: 2px solid #0f1b2e;
-	background-color: #E7F5E9;
+	border: none;
+	background-color: transparent;
 	color: #0f1b2e;
-	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: small;
 }
 
 .tree-art {
@@ -41,4 +54,26 @@ button {
 
 .author {
 	float: right;
+}
+
+.go-to-projects-button{
+	padding: 10px;
+	border-radius: 5px;
+	margin: 10px;
+	border: 2px solid #0f1b2e;
+	background-color: #0f1b2e;
+	color: #E7F5E9;
+	cursor: pointer;
+}
+@font-face {
+	font-family: "Noto Sans";
+	src: url("../../assets/fonts/NotoSans-Regular.ttf") format("truetype"),
+		url("../../assets/fonts/NotoSans-Bold.ttf") format("truetype");
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: "Font Awesome 6 Free";
+	src: url("../../assets/icons/webfonts/fa-solid-900.woff2") format("woff2"),
+		url("../../assets/icons/webfonts/fa-solid-900.ttf") format("truetype");
 }

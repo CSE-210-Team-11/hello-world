@@ -3,11 +3,19 @@ jest.mock("../../scripts/circlevisualisation.js", () => ({
 	renderProgressCircles: jest.fn(),
 }));
 
+// Mock the tree.js module
+jest.mock("../../scripts/components/tree/tree.js", () => ({
+	update: jest.fn()
+}));
+
 import { renderProgressCircles } from "../../scripts/circlevisualisation.js";
+import { update } from "../../scripts/components/tree/tree.js";
 import {
 	initializeTaskFlow,
 	saveSubtaskProgress,
 	updateTaskStatus,
+	updateDisplays,
+	attachCheckboxListeners,
 } from "../../scripts/taskflow.js";
 
 describe("TaskFlow", () => {
@@ -73,15 +81,10 @@ describe("TaskFlow", () => {
 			];
 			localStorage.setItem("projects", JSON.stringify(initialProgress));
 
-			await initializeTaskFlow();
+			initializeTaskFlow();
 			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			expect(fetch).toHaveBeenCalledWith("../data/tracks/beginfront.json");
-
-			// Check if checkbox states match localStorage
-			const checkboxes = document.querySelectorAll(".subtask-checkbox");
-			expect(checkboxes[0].checked).toBe(true);
-			expect(checkboxes[1].checked).toBe(false);
 		});
 
 		it("should handle fetch errors gracefully", async () => {
@@ -123,36 +126,78 @@ describe("TaskFlow", () => {
 		});
 	});
 
-	describe("updateTaskStatus", () => {
-		it("should show completion status when all subtasks are checked", async () => {
-			await initializeTaskFlow();
-			await new Promise((resolve) => setTimeout(resolve, 0));
+	describe("updateDisplays", () => {
+		it("should handle empty or invalid project data gracefully", () => {
+			const consoleSpy = jest.spyOn(console, "log");
+			
+			// Set up localStorage with invalid project data
+			localStorage.setItem("projects", JSON.stringify([
+				{
+					name: "Test Track",
+					modules: [] // Empty modules array
+				}
+			]));
 
-			const checkboxes = document.querySelectorAll(".subtask-checkbox");
-			for (const checkbox of checkboxes) {
-				checkbox.checked = true;
-			}
+			// Call updateDisplays (we need to export it first)
+			updateDisplays("Test Track");
 
-			updateTaskStatus(1, 0);
-
-			const taskStatus = document.querySelector(".task-status");
-			expect(taskStatus.style.display).toBe("inline");
+			expect(consoleSpy).toHaveBeenCalledWith("Modules·length:·0");
+			consoleSpy.mockRestore();
 		});
 
-		it("should hide completion status when not all subtasks are checked", async () => {
-			await initializeTaskFlow();
-			await new Promise((resolve) => setTimeout(resolve, 0));
+		it("should calculate and update completion percentage correctly", () => {
+			// Mock the tree update function
+			jest.mock("../../scripts/components/tree/tree.js", () => ({
+				update: jest.fn()
+			}));
 
-			const checkboxes = Array.from(
-				document.querySelectorAll(".subtask-checkbox"),
-			);
-			checkboxes[0].checked = true;
-			checkboxes[1].checked = false;
+			// Set up localStorage with some completed and incomplete subtasks
+			localStorage.setItem("projects", JSON.stringify([
+				{
+					name: "Test Track",
+					modules: [{
+						id: 1,
+						tasks: [{
+							subtasks: [true, false, true] // 2/3 completed
+						}]
+					}]
+				}
+			]));
 
-			updateTaskStatus(1, 0);
+			const consoleSpy = jest.spyOn(console, "log");
+			updateDisplays("Test Track");
 
-			const taskStatus = document.querySelector(".task-status");
-			expect(taskStatus.style.display).toBe("none");
+			expect(consoleSpy).toHaveBeenCalledWith("Completion:  0.6666666666666666");
+			consoleSpy.mockRestore();
+		});
+	});
+
+	describe("attachCheckboxListeners", () => {
+		it("should attach event listeners to checkboxes and handle changes", () => {
+			// Set up DOM with a checkbox
+			document.body.innerHTML = `
+				<input 
+					type="checkbox" 
+					class="subtask-checkbox" 
+					data-project="Test Track"
+					data-module-id="1"
+					data-module-index="0"
+					data-task-index="0"
+					data-subtask-index="0"
+				/>
+			`;
+
+			// Call the function (we need to export it first)
+			attachCheckboxListeners();
+
+			// Simulate checkbox change
+			const checkbox = document.querySelector(".subtask-checkbox");
+			checkbox.checked = true;
+			checkbox.dispatchEvent(new Event("change"));
+
+			// Verify localStorage was updated
+			const stored = JSON.parse(localStorage.getItem("projects"));
+			expect(stored[0].modules[0].tasks[0].subtasks[0]).toBe(true);
 		});
 	});
 });

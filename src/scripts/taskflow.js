@@ -1,15 +1,16 @@
+import { update } from './components/tree/tree.js';
+
 export function initializeTaskFlow(
 	jsonFilePath = "../data/tracks/beginfront.json",
 ) {
 	fetch(jsonFilePath)
 		.then((response) => response.json())
 		.then((data) => {
+
 			const taskFlow = document.getElementById("taskFlow");
 			taskFlow.innerHTML = ""; // Clear previous content
-
-			const trackTitle = document.createElement("h1");
-			trackTitle.textContent = data.name;
-			taskFlow.appendChild(trackTitle);
+			// trackTitle
+			let fullHTML = "";
 
 			// Retrieve progress for this specific project from localStorage
 			const projectsProgress = JSON.parse(
@@ -18,87 +19,93 @@ export function initializeTaskFlow(
 			const projectProgress = projectsProgress.find(
 				(p) => p.name === data.name,
 			);
-
+			fullHTML += `
+				<div class="project">
+					<h1>${data.name}</h1>
+				</div>
+			`;
 			// Render modules and tasks
 			for (const [moduleIndex, module] of data.modules.entries()) {
-				const moduleDiv = document.createElement("div");
-
 				// Create module button
-				const moduleButton = document.createElement("button");
-				moduleButton.className = "project-heading";
-				moduleButton.setAttribute("onclick", `showProgress('${module.id}')`);
-				moduleButton.textContent = `Module ${module.id}: ${module.name}`;
-				moduleDiv.appendChild(moduleButton);
+				fullHTML += `
+					<div class="project-heading"}>
+						<h2>Section ${module.id}: ${module.name}</h2>
+					</div>
+					<div class="unit">
+				`;
 
 				// Render tasks
 				for (const [taskIndex, task] of module.tasks.entries()) {
-					const taskDiv = document.createElement("div");
-					taskDiv.className = "task";
-					taskDiv.id = `task-${module.id}-${taskIndex}`;
-
-					// Task title
-					const taskTitle = document.createElement("h3");
-					taskTitle.innerHTML = `${task.name} <span class="task-status" style="display: none; color: green;">✅</span>`;
-					taskDiv.appendChild(taskTitle);
-
-					// Subtask list
-					const subtaskList = document.createElement("ul");
-					subtaskList.className = "subtask-list";
-
+					fullHTML += `
+						<div class="task" id='task-${module.id}-${taskIndex}'>
+							<h3>Unit ${task.taskId}: ${task.name}</h3>
+						</div>
+					`;
+					// Task title & Subtask list
 					for (const [subtaskIndex, subtask] of task.subtasks.entries()) {
-						const subtaskItem = document.createElement("li");
-						subtaskItem.className = "subtask";
+						const isChecked =
+							projectProgress?.modules?.[moduleIndex]?.tasks?.[taskIndex]
+								?.subtasks?.[subtaskIndex] === true;
+						const subtaskId = `subtask-${module.id}-${taskIndex}-${subtaskIndex}`;
 
-						const checkbox = document.createElement("input");
-						checkbox.type = "checkbox";
-						checkbox.className = "subtask-checkbox";
-						const checkboxId = `subtask-${module.id}-${taskIndex}-${subtaskIndex}`;
-						checkbox.id = checkboxId;
-
-						// Explicitly check if this subtask was previously completed in localStorage
-						if (projectProgress) {
-							const moduleProgress = projectProgress.modules[moduleIndex];
-							if (moduleProgress?.tasks[taskIndex]) {
-								const subtaskProgress =
-									moduleProgress.tasks[taskIndex].subtasks[subtaskIndex];
-								// Only set to checked if explicitly true in localStorage
-								checkbox.checked = subtaskProgress === true;
-							}
-						}
-
-						// Add event listener to save progress
-						checkbox.addEventListener("change", () => {
-							saveSubtaskProgress(
-								data.name,
-								module.id,
-								moduleIndex,
-								taskIndex,
-								subtaskIndex,
-								checkbox.checked,
-							);
-						});
-
-						const label = document.createElement("label");
-						label.htmlFor = checkboxId;
-						label.textContent = subtask;
-
-						subtaskItem.appendChild(checkbox);
-						subtaskItem.appendChild(label);
-						subtaskList.appendChild(subtaskItem);
+						fullHTML += `
+								<div class="subtask-inner-div">
+									<input 
+										type="checkbox" 
+										class="subtask-checkbox" 
+										id="${subtaskId}"
+										data-project="${data.name}"
+										data-module-id="${module.id}"
+										data-module-index="${moduleIndex}"
+										data-task-index="${taskIndex}"
+										data-subtask-index="${subtaskIndex}"
+										${isChecked ? "checked" : ""}
+									/>
+									<p class="checkbox-label">
+										<label for="${subtaskId}">
+											${subtask}
+										</label>
+									</p>
+								</div>
+                        `;
 					}
-
-					taskDiv.appendChild(subtaskList);
-					moduleDiv.appendChild(taskDiv);
 				}
-
-				taskFlow.appendChild(moduleDiv);
+				fullHTML += "</div>";
 			}
+			taskFlow.innerHTML = fullHTML;
+
+			// Add event listeners to all checkboxes after the HTML is inserted
+			attachCheckboxListeners();
+			updateDisplays(data.name);
 		})
 		.catch((error) => {
 			console.error("Error loading data:", error);
 			document.getElementById("taskFlow").innerHTML =
 				"Error loading data. Check console for details.";
 		});
+}
+
+// New function to attach event listeners to checkboxes
+export function attachCheckboxListeners() {
+	const checkboxes = document.querySelectorAll(".subtask-checkbox");
+	for (const checkbox of checkboxes) {
+		checkbox.addEventListener("change", (event) => {
+			const { project, moduleId, moduleIndex, taskIndex, subtaskIndex } =
+				event.target.dataset;
+
+			// Save progress to localStorage
+			saveSubtaskProgress(
+				project,
+				moduleId,
+				Number.parseInt(moduleIndex),
+				Number.parseInt(taskIndex),
+				Number.parseInt(subtaskIndex),
+				event.target.checked,
+			);
+
+			updateDisplays(project);
+		});
+	}
 }
 
 export function saveSubtaskProgress(
@@ -145,16 +152,37 @@ export function saveSubtaskProgress(
 	localStorage.setItem("projects", JSON.stringify(projectsProgress));
 }
 
-// Optional: Function to check if all subtasks in a task are completed
-export function updateTaskStatus(moduleId, taskIndex) {
-	const taskElement = document.getElementById(`task-${moduleId}-${taskIndex}`);
-	const checkboxes = taskElement.querySelectorAll(".subtask-checkbox");
-	const taskStatusSpan = taskElement.querySelector(".task-status");
+export function updateDisplays(projectName) {
+	// Retrieve existing projects progress
+	const projectsProgress = JSON.parse(localStorage.getItem("projects") || "[]");
 
-	const allChecked = Array.from(checkboxes).every(
-		(checkbox) => checkbox.checked,
-	);
-	taskStatusSpan.style.display = allChecked ? "inline" : "none";
+	// Find or create project progress
+	const project = projectsProgress.find((p) => p.name === projectName);
+	let totalSubtasks = 0;
+	let completedSubtasks = 0;
+	if (project.modules) {
+		console.log(`Modules·length:·${project.modules.length}`)
+		for (const module of project.modules) {
+			if (module.tasks) {
+				for (const task of module.tasks) {
+					if (task.subtasks && task.subtasks.length > 0) {
+						for (const subtask of task.subtasks) {
+							if (subtask === true) {
+								completedSubtasks++;
+							}
+							totalSubtasks++;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if (totalSubtasks !== 0) {
+		const completion = completedSubtasks / totalSubtasks;
+		console.log(`Completion:  ${completion}`);
+		update(completion);
+	}
 }
 
 // Event listener to initialize task flow based on URL parameter
