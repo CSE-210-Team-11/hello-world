@@ -7,13 +7,20 @@ body {
 	font-optical-sizing: auto;
 }
 
+#homepage-logo {
+	align-self: center;
+	border: 1px black;
+	width: 15em;
+	height: 15em;
+}
+
+#title-highlight {
+	color: green;
+}
 
 .greeting-div {
-	display: flex;
-	justify-content: center;
-	align-items: center;
 	flex-direction: column;
-	background-color: var(--light-color);
+	background-color: var(--page-bg-color);
 	color: var(--dark-color);
 	height: 100vh;
 	width: 100%;
@@ -35,9 +42,6 @@ h1 {
 	border: none;
 	background-color: transparent;
 	color: #0f1b2e;
-	display: flex;
-	align-items: center;
-	justify-content: center;
 	font-size: small;
 }
 

@@ -6,7 +6,7 @@
 </head>
 <body>
     <div class="navbar">
-        <div class="logo-home-link">
+        <div class="flexbox-display">
             <img class="logo" src="../media/images/StreakLogo.webp"/>
             <span>
                 <a class="link-style" href="../pages/home.html">
@@ -25,10 +25,24 @@
         </div>
         <div class="progress-view" id="progressView">
             <canvas id="treeCanvas" width="50%" height="50%"></canvas>
+            <div class="chart-container">
+                <div class="chart-wrapper">
+                    <canvas id="subtaskProgressChart"></canvas>
+                    <h3>Lesson Progress</h3>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="taskProgressChart"></canvas>
+                    <h3>Unit Progress</h3>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="moduleProgressChart"></canvas>
+                    <h3>Section Progress</h3>
+                </div>
+            </div>
         </div>
     </div>
     <script type="module" src="../scripts/components/tree/tree.js"></script>    
     <script type="module" src="../scripts/taskflow.js"></script>
-
+    <script type="module" src="../scripts/chart.js"></script>
 </body>
 </html>

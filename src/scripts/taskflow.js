@@ -31,16 +31,22 @@ export function initializeTaskFlow(
 					<div class="project-heading"}>
 						<h2>Section ${module.id}: ${module.name}</h2>
 					</div>
-					<div class="unit">
+					<div class="unit flexbox-display">
 				`;
 
 				// Render tasks
 				for (const [taskIndex, task] of module.tasks.entries()) {
 					fullHTML += `
-						<div class="task" id='task-${module.id}-${taskIndex}'>
-							<h3>Unit ${task.taskId}: ${task.name}</h3>
-						</div>
+						<div class="task-container">
+							<div class="task" id='task-${module.id}-${taskIndex}'>
+								<div class="task-header" onclick="this.parentElement.parentElement.classList.toggle('expanded')">
+									<h3>Unit ${taskIndex+1}: ${task.name}</h3>
+									<span class="accordion-icon">▼</span>
+								</div>
+							</div>
+							<div class="subtasks-container">
 					`;
+					
 					// Task title & Subtask list
 					for (const [subtaskIndex, subtask] of task.subtasks.entries()) {
 						const isChecked =
@@ -49,26 +55,28 @@ export function initializeTaskFlow(
 						const subtaskId = `subtask-${module.id}-${taskIndex}-${subtaskIndex}`;
 
 						fullHTML += `
-								<div class="subtask-inner-div">
-									<input 
-										type="checkbox" 
-										class="subtask-checkbox" 
-										id="${subtaskId}"
-										data-project="${data.name}"
-										data-module-id="${module.id}"
-										data-module-index="${moduleIndex}"
-										data-task-index="${taskIndex}"
-										data-subtask-index="${subtaskIndex}"
-										${isChecked ? "checked" : ""}
-									/>
-									<p class="checkbox-label">
-										<label for="${subtaskId}">
-											${subtask}
-										</label>
-									</p>
-								</div>
-                        `;
+							<div class="subtask-inner-div">
+								<input 
+									type="checkbox" 
+									class="subtask-checkbox" 
+									id="${subtaskId}"
+									data-project="${data.name}"
+									data-module-id="${module.id}"
+									data-module-index="${moduleIndex}"
+									data-task-index="${taskIndex}"
+									data-subtask-index="${subtaskIndex}"
+									${isChecked ? "checked" : ""}
+								/>
+								<label for="${subtaskId}" class="checkbox-label">
+									${subtask}
+								</label>
+							</div>
+						`;
 					}
+					fullHTML += `
+							</div>
+						</div>
+					`;
 				}
 				fullHTML += "</div>";
 			}
@@ -102,7 +110,7 @@ export function attachCheckboxListeners() {
 				Number.parseInt(subtaskIndex),
 				event.target.checked,
 			);
-
+			updateTaskStatus();
 			updateDisplays(project);
 		});
 	}
@@ -185,11 +193,243 @@ export function updateDisplays(projectName) {
 	}
 }
 
-// Event listener to initialize task flow based on URL parameter
-document.addEventListener("DOMContentLoaded", () => {
-	const params = new URLSearchParams(window.location.search);
-	const fileParam = params.get("file") || "beginfront";
-	const filePath = `../data/tracks/${fileParam}`;
+let lastPercentageTasks = -1;
+let lastPercentageModules = -1;
+let lastPercentageSubtasks = -1;
 
-	initializeTaskFlow(filePath);
+export function updateTaskStatus() {
+
+	const percentageTasks = calculatePercentageOfCompletedTasks() * 100;
+	const percentageModules = calculatePercentageOfCompletedModules() * 100;
+	const percentageSubtasks = calculatePercentageOfCompletedSubtask() * 100;
+	// console.log(`Percentage: ` + percentageTasks + " " + percentageModules + " " + percentageSubtasks);
+	if (percentageTasks !== lastPercentageTasks) {
+		updateTaskChart(percentageTasks);
+		lastPercentageTasks = percentageTasks;
+		console.log("Task chart updated");
+	}
+	if (percentageModules !== lastPercentageModules) {
+		updateModuleChart(percentageModules);
+		lastPercentageModules = percentageModules;
+		console.log("Module chart updated");
+	}
+	if (percentageSubtasks !== lastPercentageSubtasks) {
+		updateSubtaskChart(percentageSubtasks);
+		lastPercentageSubtasks = percentageSubtasks;
+		console.log("Subtask chart updated");
+	}
+}
+
+// Calculate the percentage of completed tasks
+function calculatePercentageOfCompletedTasks() {
+	const projectsProgress = JSON.parse(localStorage.getItem("projects") || "[]");
+
+	if (projectsProgress.length === 0) {
+		return 0;
+	}
+
+	// Initialize counters for total and completed tasks
+	let totalTasks = 0;
+	let completedTasks = 0;
+
+	// Iterate over all project progress
+	for (const project of projectsProgress) {
+		if (project.modules) {
+			for (const module of project.modules) {
+				if (module.tasks) {
+					for (const task of module.tasks) {
+						totalTasks++; // Count this task
+	
+						// Check if all subtasks are completed
+						if (
+							task.subtasks &&
+							task.subtasks.length > 0 &&
+							task.subtasks.every((subtask) => subtask === true)
+						) {
+							completedTasks++;
+						}
+					}
+				}
+			}
+		}
+	}
+	
+
+	// Avoid division by zero
+	if (totalTasks === 0) {
+		return 0;
+	}
+	const percentage = (completedTasks / totalTasks);
+	return percentage.toFixed(4);
+}
+
+function calculatePercentageOfCompletedModules() {
+	const projectsProgress = JSON.parse(localStorage.getItem("projects") || "[]");
+
+	if (projectsProgress.length === 0) {
+		return 0;
+	}
+
+	// Initialize counters for total and completed tasks
+	let totalModules = 0;
+	let completedModules = 0;
+
+	// Iterate over all project progress
+	for (const project of projectsProgress) {
+		if (project.modules) {
+			for (const module of project.modules) {
+				totalModules++; // Count this module
+				let flag = true;
+				if (module.tasks) {
+					for (const task of module.tasks) {
+						if (
+							task.subtasks &&
+							task.subtasks.length > 0 &&
+							task.subtasks.every((subtask) => subtask === true)
+						) {
+							// No change needed here, as the condition is checked
+						} else {
+							flag = false;
+						}
+					}
+				}
+				if (flag) {
+					completedModules++;
+				}
+			}
+		}
+	}
+	
+	// Avoid division by zero
+	if (totalModules === 0) {
+		return 0;
+	}
+
+	return completedModules / totalModules;
+}
+
+function calculatePercentageOfCompletedSubtask() {
+	const projectsProgress = JSON.parse(localStorage.getItem("projects") || "[]");
+
+	if (projectsProgress.length === 0) {
+		return 0;
+	}
+
+	// Initialize counters for total and completed tasks
+
+
+
+	
+	let totalSubtasks = 0;
+	let completedSubtasks = 0;
+
+	// Iterate over all project progress
+	for (const project of projectsProgress) {
+		if (project.modules) {
+			for (const module of project.modules) {
+				if (module.tasks) {
+					for (const task of module.tasks) {
+						if (task.subtasks) {
+							for (const subtask of task.subtasks) {
+								totalSubtasks++; // Count this subtask
+								if (subtask === true) {
+									completedSubtasks++;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+
+	// Avoid division by zero
+	if (totalSubtasks === 0) {
+		return 0;
+	}
+
+	return completedSubtasks / totalSubtasks;
+}
+
+function createDonutChart(canvasId, completedPercentage, colors) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    return new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Completed'],
+            datasets: [{
+                data: [completedPercentage, 100 - completedPercentage],
+                backgroundColor: [
+                    colors.completed, 
+                    colors.remaining  
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '70%',
+            plugins: {
+                tooltip: {
+                    callbacks: {
+						label: (context) => `${context.label}: ${context.formattedValue}%`
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+function updateTaskChart(taskPercentage) {
+	const id = 'taskProgressChart';
+	const existingChart = Chart.getChart(id);
+	if (existingChart) {
+		existingChart.destroy();
+	}
+	createDonutChart('taskProgressChart', taskPercentage, {
+		completed: 'rgba(75, 192, 192, 0.8)',
+		remaining: 'rgba(220, 220, 220, 0.5)'
+	});
+
+}
+
+function updateModuleChart(modulePercentage) {
+	const id = 'moduleProgressChart';
+	const existingChart = Chart.getChart(id);
+	if (existingChart) {
+		existingChart.destroy();
+	}
+	createDonutChart('moduleProgressChart', modulePercentage, {
+		completed: 'rgba(54, 162, 235, 0.8)',
+		remaining: 'rgba(220, 220, 220, 0.5)'
+	});
+}
+
+function updateSubtaskChart(subtaskPercentage) {
+	const id = 'subtaskProgressChart';
+	const existingChart = Chart.getChart(id);
+	if (existingChart) {
+		existingChart.destroy();
+	}
+	createDonutChart('subtaskProgressChart', subtaskPercentage, {
+		completed: 'rgba(255, 99, 132, 0.8)',
+		remaining: 'rgba(220, 220, 220, 0.5)'
+	});
+}
+
+// Event listener to initialize task flow based on URL parameter
+
+export function initializeFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const fileParam = params.get("file") || "beginfront";
+    const filePath = `../data/tracks/${fileParam}`;
+    return filePath;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const filePath = initializeFromURL();
+    initializeTaskFlow(filePath);
+	updateTaskStatus();
 });
